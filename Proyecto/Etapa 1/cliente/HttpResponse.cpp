@@ -31,7 +31,7 @@ void HttpResponse::parse(const std::string &rawResponse)
     // Parte de headres creada desde el inicio hasta el final de los headers
     std::string headerPart = rawResponse.substr(0, headerEnd);
 
-    //Parte justo después de los headers, después del \r\n\r\n
+    //Parte justo despues de los headers, despues del \r\n\r\n
     body = rawResponse.substr(headerEnd + 4);
     // Verlo como lineas
     std::istringstream stream(headerPart);
@@ -43,7 +43,7 @@ void HttpResponse::parse(const std::string &rawResponse)
         throw std::runtime_error("Respuesta HTTP invalida: vacia");
     }
 
-    // Quitar '\r' si quedó al final
+    // Quitar '\r' si quedo al final
     if (!line.empty() && line.back() == '\r')
     {
         line.pop_back();

@@ -10,19 +10,20 @@ private:
     const char * os;
     const char * osi;
     const char * ose;
+    bool useSSL;
     VSocket * socket;
     
     std::vector<std::string> fetchedFigures;
-    void fetchFigures();
+    void LIST_FIGURES();
 
     std::string selectFigure();
     std::string selectPart();
-    std::string createLink();
-    void printCleanTable(const std::string& html);
+    std::string GET_FIGURE();
+    void FIGURE_PARTS(const std::string& html);
     void trim(std::string &s);
 
 public:
-    Cliente();
+    Cliente(bool useSSL = false);
     ~Cliente();
     void ejecutar();
 };
