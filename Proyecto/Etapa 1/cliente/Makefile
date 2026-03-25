@@ -6,7 +6,7 @@ CC  := gcc
 CXX := g++
 CFLAGS := -g -c
 CXXFLAGS := -g -c
-DEPS := Socket.h
+DEPS := Socket.h VSocket.h SSLSocket.h
 TARGETS := ClienteMain.out
 
 ALL := $(TARGETS)
@@ -17,12 +17,19 @@ ALL := $(TARGETS)
 %.o: %.cpp $(DEPS)
 	$(CXX) $(CXXFLAGS) $<
 
-%.out: %.o Socket.o VSocket.o HttpRequest.o HttpResponse.o Cliente.o
-	$(info $$^ = $^)
-	$(CXX) -g $^ Socket.o VSocket.o HttpRequest.o HttpResponse.o Cliente.o -o $^
+%.o: %.cc $(DEPS)
+	$(CXX) $(CXXFLAGS) $<
 
-ClienteMain.out: ClienteMain.o Socket.o VSocket.o HttpRequest.o HttpResponse.o Cliente.o
-	$(CXX) -g ClienteMain.o Socket.o VSocket.o HttpRequest.o HttpResponse.o Cliente.o -o $@
+OBJS := ClienteMain.o Socket.o VSocket.o SSLSocket.o HttpRequest.o HttpResponse.o Cliente.o
+
+ClienteMain.out: $(OBJS)
+	$(CXX) -g $(OBJS) -o $@ -lssl -lcrypto
 
 clean:
 	@rm -f *.o *.out
+
+run:
+	./ClienteMain.out
+
+runssl:
+	./ClienteMain.out ssl

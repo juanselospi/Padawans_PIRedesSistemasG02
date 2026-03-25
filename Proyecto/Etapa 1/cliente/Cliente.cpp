@@ -1,5 +1,6 @@
 #include "Cliente.h"
 #include "Socket.h"
+#include "SSLSocket.h"
 #include "HttpRequest.h"
 #include "HttpResponse.h"
 
@@ -10,11 +11,19 @@
 
 
 // Constructor de la clase Cliente
-Cliente::Cliente() {
-    os = "http://os.ecci.ucr.ac.cr/";
+Cliente::Cliente(bool useSSL) {
+    this->useSSL = useSSL;
     osi = "10.84.166.62";
     ose = "163.178.104.62";
-    socket = new Socket('s');
+    if (useSSL) {
+        os = "https://os.ecci.ucr.ac.cr/";
+        socket = new SSLSocket();   // IPv4 SSL
+        std::cout << "[Modo: HTTPS con SSL - Puerto 443]\n";
+    } else {
+        os = "http://os.ecci.ucr.ac.cr/";
+        socket = new Socket('s');   // IPv4 normal
+        std::cout << "[Modo: HTTP sin SSL - Puerto 80]\n";
+    }
 }
 
 
@@ -141,8 +150,66 @@ std::string Cliente::GET_FIGURE() {
 
 // Metodo que permite obtener las figuras del servidor
 void Cliente::LIST_FIGURES() {
+    int port = useSSL ? 443 : 80;
+    // Usamos un socket del mismo tipo que el principal
+    if (useSSL) {
+        SSLSocket tempSocket;
+        tempSocket.Connect(ose, port);
+
+        HttpRequest request;
+        request.setMethod("GET");
+        request.setPath("/lego/index.php");
+        request.setHost("redes.ecci");
+
+        std::string reqStr = request.toString();
+        tempSocket.Write(reqStr.c_str());
+
+        std::string response = "";
+        char a[512];
+        size_t bytesRead;
+        while ((bytesRead = tempSocket.Read(a, sizeof(a) - 1)) > 0) {
+            a[bytesRead] = '\0';
+            response += a;
+        }
+
+        try {
+            HttpResponse httpResponse(response);
+            std::string body = httpResponse.getBody();
+            size_t selectPos = body.find("<SELECT NAME=\"figures\"");
+            if (selectPos != std::string::npos) {
+                size_t selectEnd = body.find("</SELECT>", selectPos);
+                size_t optionPos = body.find("<OPTION", selectPos);
+                while (optionPos != std::string::npos && optionPos < selectEnd) {
+                    size_t valStart = body.find("value=\"", optionPos);
+                    if (valStart != std::string::npos && valStart < selectEnd) {
+                        valStart += 7;
+                        size_t valEnd = body.find("\"", valStart);
+                        if (valEnd != std::string::npos && valEnd < selectEnd) {
+                            std::string fig = body.substr(valStart, valEnd - valStart);
+                            if (fig != "None" && fig != "0") {
+                                fetchedFigures.push_back(fig);
+                            }
+                        }
+                    }
+                    optionPos = body.find("<OPTION", optionPos + 7);
+                }
+            }
+        } catch (...) {}
+
+        if (fetchedFigures.empty()) {
+            fetchedFigures = {
+                "Horse", "blacksheep", "dragon", "duck", "elephant",
+                "fish", "giraffe", "horse", "lion", "monkey", "orchid",
+                "penguin", "q", "roadrunner", "shark", "squid", "swan",
+                "turtle", "whitesheep"
+            };
+        }
+        return;
+    }
+
+    // Sin SSL:
     Socket tempSocket('s');
-    tempSocket.Connect(ose, 80);
+    tempSocket.Connect(ose, port);
     
     HttpRequest request;
     request.setMethod("GET");
@@ -186,10 +253,10 @@ void Cliente::LIST_FIGURES() {
             }
         }
     } catch (...) {
-        // En caso de error de parseo se omitirá o se pondrá lista por defecto
+        // En caso de error de parseo se omitira o se pondra lista por defecto
     }
     
-    // Si la lista quedo vacía luego del intento, usar la lista predeterminada
+    // Si la lista quedo vacia luego del intento, usar la lista predeterminada
     if (fetchedFigures.empty()) {
         fetchedFigures = {
             "Horse", "blacksheep", "dragon", "duck", "elephant", 
@@ -205,25 +272,32 @@ std::string Cliente::selectFigure() {
    if (fetchedFigures.empty()) {
        LIST_FIGURES();
    }
-   
+
    printf("Seleccione el numero de figura:\n");
    for (size_t i = 0; i < fetchedFigures.size(); ++i) {
        printf("%zu. %s\n", i + 1, fetchedFigures[i].c_str());
    }
 
+   std::string input;
+   std::getline(std::cin, input);
+
+   // Entrada vacia
+   if (input.empty()) {
+       printf("Entrada vacia, intente de nuevo\n");
+       return selectFigure();
+   }
+
    int option;
-   if (scanf("%d", &option) != 1) {
-       // Limpiar el buffer de entrada en caso de que escriban texto
-       int c;
-       while ((c = getchar()) != '\n' && c != EOF);
+   try {
+       option = std::stoi(input);
+   } catch (...) {
        printf("Entrada invalida\n");
        return selectFigure();
    }
 
    if (option < 1 || option > (int)fetchedFigures.size()) {
-      printf("Opcion invalida\n");
-      //retry
-      return selectFigure();
+       printf("Opcion invalida\n");
+       return selectFigure();
    }
 
    return fetchedFigures[option - 1];
@@ -232,37 +306,46 @@ std::string Cliente::selectFigure() {
 
 // Metodo que permite seleccionar la parte de la figura
 std::string Cliente::selectPart() {
-   std::string part;
    printf("Seleccione la parte de la figura: \n"
-   "1. Primera mitad\n"
-   "2. Segunda mitad\n");
+          "1. Primera mitad\n"
+          "2. Segunda mitad\n");
+
+   std::string input;
+   std::getline(std::cin, input);
+
+   // Entrada vacia
+   if (input.empty()) {
+       printf("Entrada vacia, intente de nuevo\n");
+       return selectPart();
+   }
 
    int option;
-   if (scanf("%d", &option) != 1) {
-       int c;
-       while ((c = getchar()) != '\n' && c != EOF);
+   try {
+       option = std::stoi(input);
+   } catch (...) {
        printf("Entrada invalida\n");
        return selectPart();
    }
 
    if (option < 1 || option > 2) {
-      printf("Opcion invalida\n");
-      //retry
-      return selectPart();
+       printf("Opcion invalida\n");
+       return selectPart();
    }
 
    switch (option) {
-      case 1: part = "1"; break;
-      case 2: part = "2"; break;
+       case 1: return "1";
+       case 2: return "2";
    }
-   return part;
+
+   return ""; // por seguridad (nunca deberia llegar aqui)
 }
 
 
 // Metodo que permite ejecutar el cliente
 void Cliente::ejecutar() {
    std::string reqStr = GET_FIGURE();
-   socket->Connect(ose, 80);   // usar "osi" en la ECCI, "ose" en sus casas
+   int port = useSSL ? 443 : 80;
+   socket->Connect(ose, port);   // usar "osi" en la ECCI, "ose" en  casa
    socket->Write(reqStr.c_str());
 
    std::string response = "";

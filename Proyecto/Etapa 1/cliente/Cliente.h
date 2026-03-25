@@ -10,6 +10,7 @@ private:
     const char * os;
     const char * osi;
     const char * ose;
+    bool useSSL;
     VSocket * socket;
     
     std::vector<std::string> fetchedFigures;
@@ -22,7 +23,7 @@ private:
     void trim(std::string &s);
 
 public:
-    Cliente();
+    Cliente(bool useSSL = false);
     ~Cliente();
     void ejecutar();
 };
