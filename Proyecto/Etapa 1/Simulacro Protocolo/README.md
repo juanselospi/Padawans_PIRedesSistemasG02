@@ -111,3 +111,9 @@ Intermediario resuelve FIGURE_FOUND para cliente B74200
 Lista de LEGOS:
 - Death Star II
 
+# Figura seleccionada:
+Death Star II
+![](https://github.com/juanselospi/Team3_PIRedesSistemasG02/blob/main/Proyecto/Etapa%201/Recursos/Figura.png)
+## Partes:
+![](https://github.com/juanselospi/Team3_PIRedesSistemasG02/blob/main/Proyecto/Etapa%201/Recursos/partes_figura_lego1.png)
+![](https://github.com/juanselospi/Team3_PIRedesSistemasG02/blob/main/Proyecto/Etapa%201/Recursos/6f46a9c6-1.png)
