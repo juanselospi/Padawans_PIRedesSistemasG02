@@ -7,8 +7,37 @@
 #include <map>
 #include <algorithm>
 #include <cctype>
+#include <fstream>
+#include <iomanip>
+#include <chrono>
 
 using namespace std;
+
+pthread_mutex_t mutex_log = PTHREAD_MUTEX_INITIALIZER;
+
+void writeLog(const string& entidad, const string& tipoLog, const string& mensaje) {
+
+    auto now = chrono::system_clock::now();
+    time_t now_time = chrono::system_clock::to_time_t(now);
+    struct tm* timeinfo = localtime(&now_time);
+    
+    char timeBuffer[80];
+
+    strftime(timeBuffer, sizeof(timeBuffer), "%d/%m/%Y %H:%M", timeinfo);
+    
+    pthread_mutex_lock(&mutex_log);
+
+    ofstream logFile("bitacora.log", ios::app);
+
+    if(logFile.is_open()) {
+
+        logFile << "[" << entidad << "] [" << timeBuffer << "] [" << tipoLog << "] " << mensaje << "\n";
+        
+        logFile.close();
+    }
+
+    pthread_mutex_unlock(&mutex_log);
+}
 
 typedef struct {
     string tipo; // que tipo de request
@@ -174,8 +203,17 @@ void* cliente(void* arg) {
 
         cout << "El cliente " << m.id << " pide " << peticion << endl;
 
+        if(m.tipo == "LIST_FIGURES") {
+
+            writeLog("CLIENTE", "SOLICITUD", "LIST_FIGURES");
+
+        } else {
+
+            writeLog("CLIENTE", "SOLICITUD", "GET_FIGURE figura=" + m.figura + " segmento=" + to_string(m.segmento));
+        }
 
         bool respuesta_recibida = false;
+        int time_waited = 0;
 
         while(!respuesta_recibida) {
 
@@ -193,6 +231,7 @@ void* cliente(void* arg) {
 
                     if(respuesta.tipo == "RETURN_FIGURE") {
 
+                        writeLog("CLIENTE", "RESPUESTA", "RETURN_FIGURE figura=" + respuesta.figura + " segmento=" + to_string(respuesta.segmento));
                         cout << "FIGURA: " << respuesta.figura << endl;
                         cout << "SEGMENTO: " << respuesta.segmento << endl;
                         cout << "PIEZAS:" << endl;
@@ -214,6 +253,7 @@ void* cliente(void* arg) {
 
                     } else if(respuesta.tipo == "FIGURES_LIST") {
 
+                        writeLog("CLIENTE", "RESPUESTA", "FIGURES_LIST");
                         cout << "Lista de LEGOS:" << endl;
 
                         for(const string& figura : respuesta.figuras) {
@@ -225,6 +265,7 @@ void* cliente(void* arg) {
 
                     } else if(respuesta.tipo == "FIGURE_NOT_FOUND") {
 
+                        writeLog("CLIENTE", "RESPUESTA", "FIGURE_NOT_FOUND");
                         cout << "Figura no encontrada" << endl;
 
                         break;
@@ -238,6 +279,14 @@ void* cliente(void* arg) {
             pthread_mutex_unlock(&mutex_ci);
 
             usleep(100000);
+            time_waited++;
+
+            if(time_waited > 50) {
+
+                writeLog("CLIENTE", "ERROR", "Timeout esperando respuesta");
+                cout << "Timeout esperando respuesta" << endl;
+                break;
+            }
         }
     }
 
@@ -282,6 +331,8 @@ void* intermediario(void* arg) {
             if(m.tipo == "GET_FIGURE") {
 
                 cout << "Intermediario procesa solicitud " << m.tipo << " de cliente " << m.id << endl;
+                writeLog("INTERM", "SOLICITUD", "ASK_FIGURE figura=" + m.figura + " segmento=" + to_string(m.segmento));
+                writeLog("INTERM", "ENRUTAMIENTO", "Enviando solicitud a servidor");
 
                 buzon_ci.pop();
                 pthread_mutex_unlock(&mutex_ci);
@@ -304,6 +355,8 @@ void* intermediario(void* arg) {
             if(m.tipo == "LIST_FIGURES") {
 
                 cout << "Intermediario procesa solicitud " << m.tipo << " de cliente " << m.id << endl;
+                writeLog("INTERM", "SOLICITUD", "ASK_FIGURE figura=ALL");
+                writeLog("INTERM", "ENRUTAMIENTO", "Enviando solicitud a servidor");
 
                 buzon_ci.pop();
                 pthread_mutex_unlock(&mutex_ci);
@@ -352,6 +405,7 @@ void* intermediario(void* arg) {
 
                     respuesta.tipo = "FIGURES_LIST";
                     respuesta.figuras = m.figuras;
+                    writeLog("INTERM", "RESPUESTA", "FIGURES_LIST");
 
                 } else {
 
@@ -359,6 +413,7 @@ void* intermediario(void* arg) {
                     respuesta.figura = m.figura;
                     respuesta.segmento = m.segmento;
                     respuesta.piezas = m.piezas;
+                    writeLog("INTERM", "RESPUESTA", "RETURN_FIGURE figura=" + m.figura + " segmento=" + to_string(m.segmento));
                 }
 
                 pthread_mutex_lock(&mutex_ci);
@@ -375,6 +430,10 @@ void* intermediario(void* arg) {
             if(m.tipo == "FIGURE_NOT_FOUND") {
 
                 cout << "Intermediario recibio respuesta " << m.tipo << " del servidor. Redireccionando solicitud... " << endl;
+
+                writeLog("INTERM", "ENRUTAMIENTO", "Figura no encontrada localmente");
+                writeLog("INTERM", "SOLICITUD", "GET_FIGURE figura=" + m.figura + " segmento=" + to_string(m.segmento) + " (reenvío a intermediarios)");
+                writeLog("INTERM", "ENRUTAMIENTO", "Reenviando GET_FIGURE (interm-interm)");
 
                 buzon_is.pop();
                 pthread_mutex_unlock(&mutex_is);
@@ -414,6 +473,7 @@ void* intermediario(void* arg) {
             if(m.tipo == "FIGURE_FOUND") {
 
                 cout << "Intermediario recibio respuesta " << m.tipo << " de otro intermediario para cliente " << m.id << endl;
+                writeLog("INTERM", "RESPUESTA", "RETURN_FIGURE figura=" + m.figura + " segmento=" + to_string(m.segmento));
 
                 buzon_i2.pop();
                 pthread_mutex_unlock(&mutex_i2);
@@ -436,6 +496,8 @@ void* intermediario(void* arg) {
             } else if (m.tipo == "FIGURE_NOT_FOUND") {
 
                 cout << "Intermediario recibio respuesta " << m.tipo << " de otro intermediario para cliente " << m.id << endl;
+                writeLog("INTERM", "RESPUESTA", "FIGURE_NOT_FOUND figura=" + m.figura + " segmento=" + to_string(m.segmento));
+                writeLog("INTERM", "ERROR", "Ningún intermediario respondió a la solicitud");
 
                 buzon_i2.pop();
                 pthread_mutex_unlock(&mutex_i2);
@@ -579,6 +641,7 @@ void* servidor(void* arg) {
                 if(m.figura.empty()) {
 
                     respuesta.tipo = "FIGURE_NOT_FOUND";
+                    writeLog("SERVIDOR", "ERROR", "Error procesando solicitud ASK_FIGURE");
 
                 } else if(m.figura == "ALL") {
 
@@ -624,6 +687,20 @@ void* servidor(void* arg) {
                 pthread_mutex_unlock(&mutex_is);
 
                 cout << "Servidor respondio solicitud " << m.tipo << " de cliente " << m.id << endl;
+
+                if(respuesta.tipo == "FIGURE_FOUND") {
+
+                    if(m.figura == "ALL") {
+
+                        writeLog("SERVIDOR", "RESPUESTA", "FIGURE_FOUND figura=ALL");
+                    } else {
+
+                        writeLog("SERVIDOR", "RESPUESTA", "FIGURE_FOUND figura=" + m.figura + " segmento=" + to_string(m.segmento));
+                    }
+                } else if(respuesta.tipo == "FIGURE_NOT_FOUND") {
+                    
+                    writeLog("SERVIDOR", "RESPUESTA", "FIGURE_NOT_FOUND figura=" + m.figura + " segmento=" + to_string(m.segmento));
+                }
 
                 continue;
             }
@@ -833,6 +910,7 @@ int main() {
     pthread_mutex_destroy(&mutex_ci);
     pthread_mutex_destroy(&mutex_is);
     pthread_mutex_destroy(&mutex_i2);
+    pthread_mutex_destroy(&mutex_log);
 
     return 0;
 }
