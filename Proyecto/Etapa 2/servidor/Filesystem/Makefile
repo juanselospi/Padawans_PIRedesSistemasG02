@@ -6,6 +6,9 @@ test_disk.out: main.cc filesystem.cc disk.cc
 fs_cli: fs_cli.cc filesystem.cc disk.cc
 	g++ -g fs_cli.cc filesystem.cc disk.cc -o fs_cli
 
+seed: seed.cc filesystem.cc disk.cc
+	g++ -g seed.cc filesystem.cc disk.cc -o seed
+
 run: test_disk.out
 	./test_disk.out
 

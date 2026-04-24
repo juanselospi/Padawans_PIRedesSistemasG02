@@ -31,7 +31,7 @@ int main() {
     fs_mount();
 
     //archivos a ingresar
-    seedFile( "index.txt", "dragon\nhorse\nfish\ngiraffe\ndeath_star_ii\nmillennium_falcon\nimperial_destroyer\nspeeder_bike\nc3po\n" );
+    seedFile( "index.txt", "dragon\nhorse\nfish\ngiraffe\ndeath_star_ii\nmillennium_falcon\nimperial_destroyer\n" );
     seedFile( "dragon_1.txt", "1|brick 2x2 slope orange\n2|brick 2x3 yellow\n2|brick 2x2 yellow\n" );
     seedFile( "dragon_2.txt", "1|brick 1x4 black\n2|plate 2x2 red\n1|brick 2x6 blue\n" );
     seedFile( "horse_1.txt", "1|plate 2x4 brown\n1|brick 2x2 white\n2|brick 1x2 black\n" );
@@ -46,11 +46,6 @@ int main() {
     seedFile( "millennium_falcon_2.txt", "2|plate 2x3 light gray\n1|plate 2x4 dark gray\n1|tile 2x3 light gray\n1|tile 2x4 dark gray\n2|slope 2x2 light gray\n1|slope 2x3 dark gray\n2|wedge 2x2 light gray\n1|wedge 2x3 light gray\n1|plate 1x4 dark gray\n1|tile 1x4 black\n" );
     seedFile( "imperial_destroyer_1.txt", "2|brick 2x2 light gray\n1|brick 2x2 dark gray\n2|brick 2x3 light gray\n1|brick 2x3 dark gray\n2|brick 2x4 light gray\n1|brick 2x4 dark gray\n1|brick 2x6 light gray\n2|plate 2x4 light gray\n1|plate 2x3 light gray\n1|plate 2x2 dark gray\n1|tile 2x2 dark gray\n1|round 2x2 light gray\n" );
     seedFile( "imperial_destroyer_2.txt", "2|wedge 2x4 light gray\n2|wedge 2x3 light gray\n2|slope 2x3 light gray\n1|slope 2x2 dark gray\n1|tile 2x4 light gray\n1|tile 2x3 dark gray\n1|plate 1x6 light gray\n1|plate 1x4 dark gray\n1|round 2x2 light gray\n2|round 1x1 dark gray\n1|tile 1x4 black\n1|plate 2x2 black\n1|slope 1x2 light gray\n" );
-    seedFile( "speeder_bike_1.txt", "2|brick 1x2 dark gray\n1|brick 1x3 black\n1|plate 1x4 dark gray\n1|plate 1x3 black\n1|tile 1x2 dark gray\n1|slope 1x2 dark gray\n2|round 1x1 black\n" );
-    seedFile( "speeder_bike_2.txt", "1|plate 1x6 dark gray\n1|tile 1x4 black\n1|slope 1x2 black\n1|bar 1x4 black\n1|round 1x1 transparent red\n" );
-    seedFile( "c3po_1.txt", "2|brick 1x2 yellow\n1|plate 1x2 yellow\n1|tile 1x2 yellow\n1|round 1x1 yellow\n" );
-    seedFile( "c3po_2.txt", "1|plate 1x3 yellow\n1|tile 1x3 yellow\n1|bar 1x2 yellow\n1|round 1x1 black\n" );
-
 
     disk_close();
 

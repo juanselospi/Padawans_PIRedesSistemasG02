@@ -16,13 +16,20 @@
 Cliente::Cliente(bool useSSL) {
     this->useSSL = useSSL;
     this->port = 8080;
+
+    //Aqui se cambia la direccion IP del servidor y el puerto
+    
     osi = "127.0.0.1";
-    ose = "192.168.1.106";
+    ose = "10.103.41.163";
+
     if (useSSL) {
+
         os = "https://os.ecci.ucr.ac.cr/";
         socket = new SSLSocket();   // IPv4 SSL
         std::cout << "[Modo: HTTPS con SSL - Puerto " << port << "]\n";
+
     } else {
+
         os = "http://os.ecci.ucr.ac.cr/";
         socket = new Socket('s');   // IPv4 normal
         std::cout << "[Modo: HTTP sin SSL - Puerto " << port << "]\n";
@@ -309,10 +316,12 @@ std::string Cliente::selectFigure() {
         LIST_FIGURES();
     }
 
-    printf("Seleccione el numero de figura:\n");
+    printf("Figuras disponibles:\n");
     for (size_t i = 0; i < fetchedFigures.size(); ++i) {
-        printf("%zu. %s\n", i + 1, fetchedFigures[i].c_str());
+        printf("- %s\n", fetchedFigures[i].c_str());
     }
+
+    printf("\nDigite el nombre de la figura:\n");
 
     std::string input;
     std::getline(std::cin, input);
@@ -323,20 +332,28 @@ std::string Cliente::selectFigure() {
         return selectFigure();
     }
 
-    int option;
-    try {
-        option = std::stoi(input);
-    } catch (...) {
-        printf("Entrada invalida\n");
-        return selectFigure();
+    std::string input_lower = input;
+
+    for (char &c : input_lower) {
+
+        c = std::tolower((unsigned char)c);
     }
 
-    if (option < 1 || option > (int)fetchedFigures.size()) {
-        printf("Opcion invalida\n");
-        return selectFigure();
+    for (const std::string& fig : fetchedFigures) {
+
+        std::string fig_lower = fig;
+        for (char &c : fig_lower) {
+            c = std::tolower((unsigned char)c);
+        }
+        if (input_lower == fig_lower) {
+
+            return fig;
+        }
     }
 
-    return fetchedFigures[option - 1];
+    printf("Figura no encontrada, intente de nuevo\n");
+    
+    return selectFigure();
 }
 
 
