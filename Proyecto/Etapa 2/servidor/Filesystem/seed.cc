@@ -3,7 +3,7 @@
 #include "disk.h"
 #include "filesystem.h"
 
-static const char* DISK_FILE = "Filesystem/lego_data.bin";
+static const char* DISK_FILE = "lego_data.bin";
 static const int   DISK_BLOCKS = 500;
 
 // Crea un archivo y lo llena con contenido

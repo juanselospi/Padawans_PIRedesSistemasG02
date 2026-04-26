@@ -21,10 +21,8 @@ servidor: $(SERVER_OBJ)
 	$(CXX) $(CXXFLAGS) -o server $(SERVER_OBJ)
 
 # Herramienta para cargar datos iniciales
-seed: Filesystem/seed.cc $(FS_SRC)
-	$(CXX) $(CXXFLAGS) Filesystem/seed.cc $(FS_SRC) -o seed_tool
-	./seed_tool
-	rm -f seed_tool
+seed:
+	$(MAKE) -C Filesystem seed
 
 # Regla para compilar .cpp
 %.o: %.cpp
@@ -36,7 +34,7 @@ seed: Filesystem/seed.cc $(FS_SRC)
 
 # Limpiar
 clean:
-	rm -f *.o Filesystem/*.o server lego_data.bin
+	rm -f *.o Filesystem/*.o server Filesystem/lego_data.bin
 
 # Ejecutar rápido
 run: servidor

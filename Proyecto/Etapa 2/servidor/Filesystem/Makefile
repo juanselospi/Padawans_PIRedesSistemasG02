@@ -7,7 +7,9 @@ fs_cli: fs_cli.cc filesystem.cc disk.cc
 	g++ -g fs_cli.cc filesystem.cc disk.cc -o fs_cli
 
 seed: seed.cc filesystem.cc disk.cc
-	g++ -g seed.cc filesystem.cc disk.cc -o seed
+	g++ -g seed.cc filesystem.cc disk.cc -o seed_tool
+	./seed_tool
+	rm -f seed_tool
 
 run: test_disk.out
 	./test_disk.out
