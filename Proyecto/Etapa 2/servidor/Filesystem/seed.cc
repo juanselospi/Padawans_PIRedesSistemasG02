@@ -4,7 +4,7 @@
 #include "filesystem.h"
 
 static const char* DISK_FILE = "lego_data.bin";
-static const int   DISK_BLOCKS = 500;
+static const int   DISK_BLOCKS = 256;
 
 // Crea un archivo y lo llena con contenido
 static void seedFile( const char* name, const char* content ) {
