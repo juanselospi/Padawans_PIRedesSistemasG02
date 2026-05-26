@@ -20,22 +20,35 @@
 
 class AddrSpace {
   public:
-    AddrSpace(OpenFile *executable);	// Create an address space,
-					// initializing it with the program
-					// stored in the file "executable"
+    AddrSpace(OpenFile *executable);	// Load a new user program
+    AddrSpace(AddrSpace *parent);	// Fork: share code/data, new stack
     ~AddrSpace();			// De-allocate an address space
 
-    void InitRegisters();		// Initialize user-level CPU registers,
-					// before jumping to user code
+    void InitRegisters();		// Initial registers for main thread
+    void InitRegistersForFork(int funcAddr);	// Registers for Fork child
 
-    void SaveState();			// Save/restore address space-specific
-    void RestoreState();		// info on a context switch 
+    void SaveState();			// Save address space on context switch
+    void RestoreState();		// Restore address space on context switch
+
+    void AddThread() { threadCount++; }
+    void RemoveThread() { threadCount--; }
+    bool CanDelete() { return threadCount <= 0; }
+
+    static void ReserveTestPhysPages();	// Mark frames 0,2,4,6,8,10 (lab test)
+    static void ReleaseTestPhysPages();	// Release reserved test frames
 
   private:
-    TranslationEntry *pageTable;	// Assume linear page table translation
-					// for now!
-    unsigned int numPages;		// Number of pages in the virtual 
-					// address space
+    void AllocatePageTable(unsigned int numPages);
+    void LoadSegment(OpenFile *executable, int segmentSize,
+                     unsigned int virtualAddr, int inFileAddr);
+    int  AllocatePhysicalPage();
+    void DeallocatePhysicalPage(int physPage);
+
+    int threadCount;
+    TranslationEntry *pageTable;
+    unsigned int numPages;
+    unsigned int numStackPages;
+    unsigned int stackVirtualTop;
 };
 
 #endif // ADDRSPACE_H
