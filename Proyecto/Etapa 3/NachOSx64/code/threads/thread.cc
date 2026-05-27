@@ -314,4 +314,23 @@ Thread::RestoreUserState()
     for (int i = 0; i < NumTotalRegs; i++)
 	machine->WriteRegister(i, userRegisters[i]);
 }
+
+
+// Thread::CloneUserState
+//	Copy saved user registers from parent and set entry point.
+
+void
+Thread::CloneUserState (Thread *parent, int entryPoint)
+{
+    static int stackSlots = 1;
+
+    for (int i = 0; i < NumTotalRegs; i++) {
+	    userRegisters[i] = parent->userRegisters[i];
+    }
+    userRegisters[PCReg] = entryPoint;
+    userRegisters[NextPCReg] = entryPoint + 4;
+    // Asignar pilas descendentes desde el tope del espacio de direcciones
+    userRegisters[StackReg] = parent->userRegisters[StackReg] - (512 * stackSlots);
+    stackSlots++;
+}
 #endif

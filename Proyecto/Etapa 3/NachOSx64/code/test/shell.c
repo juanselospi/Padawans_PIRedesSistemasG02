@@ -6,8 +6,9 @@ main()
     SpaceId newProc;
     OpenFileId input = ConsoleInput;
     OpenFileId output = ConsoleOutput;
-    char prompt[2], ch, buffer[60];
+    char prompt[2], buffer[60];
     int i;
+    int n;
 
     prompt[0] = '-';
     prompt[1] = '-';
@@ -17,14 +18,15 @@ main()
 	Write(prompt, 2, output);
 
 	i = 0;
-	
+
 	do {
-	
-	    Read(&buffer[i], 1, input); 
+	    n = Read(&buffer[i], 1, input);
+	    if (n < 0) Exit(0);   /* EOF real: terminar el shell */
+	    if (n == 0) break;    /* fin de linea: salir del loop sin incluir '\n' */
+	    i++;
+	} while (i < 59);
 
-	} while( buffer[i++] != '\n' );
-
-	buffer[--i] = '\0';
+	buffer[i] = '\0';
 
 	if( i > 0 ) {
 		newProc = Exec(buffer);
@@ -32,4 +34,3 @@ main()
 	}
     }
 }
-

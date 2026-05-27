@@ -32,6 +32,12 @@ extern Timer *timer;				// the hardware alarm clock
 #ifdef USER_PROGRAM
 #include "machine.h"
 extern Machine* machine;	// user program memory and registers
+
+class BitMap;
+class Lock;
+extern BitMap *freePhysPages;	// physical page frame allocator
+extern Lock *physPageLock;	// exclusive access to freePhysPages
+extern int *frameRefCount;	// reference count per physical frame
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 

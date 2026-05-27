@@ -123,51 +123,81 @@ Semaphore::Destroy()
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
 Lock::Lock(const char* debugName) {
-
+    name = (char*)debugName;
+    semaphore = new Semaphore(debugName, 1);
+    ownerThread = NULL;
 }
 
 
 Lock::~Lock() {
-
+    delete semaphore;
 }
 
 
 void Lock::Acquire() {
-
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    ASSERT(!isHeldByCurrentThread());
+    semaphore->P();
+    ownerThread = currentThread;
+    interrupt->SetLevel(oldLevel);
 }
 
 
 void Lock::Release() {
-
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    ASSERT(isHeldByCurrentThread());
+    ownerThread = NULL;
+    semaphore->V();
+    interrupt->SetLevel(oldLevel);
 }
 
 
 bool Lock::isHeldByCurrentThread() {
-   return false;
+   return (ownerThread == currentThread);
 }
 
 
 Condition::Condition(const char* debugName) {
-
+    name = (char*)debugName;
+    queue = new List<Thread*>;
 }
 
 
 Condition::~Condition() {
-
+    delete queue;
 }
 
 
 void Condition::Wait( Lock * conditionLock ) {
-
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    ASSERT(conditionLock->isHeldByCurrentThread());
+    conditionLock->Release();
+    queue->Append(currentThread);
+    currentThread->Sleep();
+    conditionLock->Acquire();
+    interrupt->SetLevel(oldLevel);
 }
 
 
 void Condition::Signal( Lock * conditionLock ) {
-
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    ASSERT(conditionLock->isHeldByCurrentThread());
+    Thread *thread = queue->Remove();
+    if (thread != NULL) {
+        scheduler->ReadyToRun(thread);
+    }
+    interrupt->SetLevel(oldLevel);
 }
 
 
 void Condition::Broadcast( Lock * conditionLock ) {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    ASSERT(conditionLock->isHeldByCurrentThread());
+    Thread *thread;
+    while ((thread = queue->Remove()) != NULL) {
+        scheduler->ReadyToRun(thread);
+    }
+    interrupt->SetLevel(oldLevel);
 }
 
 
