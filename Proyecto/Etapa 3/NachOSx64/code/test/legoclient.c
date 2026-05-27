@@ -26,21 +26,21 @@ char part[4];       // parte: "1" o "2"
 
 // Funciones auxiliares de cadenas
 
-int mystrlen(const char *s){
+int mystrlen(const char *s) {
     int n = 0;
-    while(s[n]) n++;
+    while (s[n]) n++;
     return n;
 }
 
 // Concatena src al final de dst (dst debe tener espacio suficiente)
-void mystrcat(char *dst, const char *src){
-    while(*dst) dst++;
-    while((*dst++ = *src++));
+void mystrcat(char *dst, const char *src) {
+    while (*dst) dst++;
+    while ((*dst++ = *src++));
 }
 
 // Helpers de consola
 
-void print(const char *s){
+void print(const char *s) {
     Write(s, mystrlen(s), ConsoleOutput);
 }
 
@@ -49,31 +49,30 @@ void print(const char *s){
  * Retorna número de caracteres leídos, -1 en EOF real.
  * El '\n' no se incluye en dst.
  */
-int readline(char *dst, int maxlen){
+int readline(char *dst, int maxlen) {
     int i = 0, n;
-    do{
+    do {
         n = Read(&dst[i], 1, ConsoleInput);
-        if(n < 0) return -1;   // EOF real: stdin cerrado   
-        if(n == 0) break;       // salto de línea recibido   
+        if (n < 0) return -1;   // EOF real: stdin cerrado   
+        if (n == 0) break;       // salto de línea recibido   
         i++;
-    }
-    while(i < maxlen - 1);
+    } while (i < maxlen - 1);
     dst[i] = '\0';
     return i;
 }
 
-/
+/**
  * doRequest: abre socket, envía GET, lee respuesta en buf[].
  * Retorna total de bytes recibidos.
  * *bodyStart se establece al índice donde comienza el cuerpo HTTP
  * (después de \r\n\r\n).
   */
 
-int doRequest(const char *reqPath, int *bodyStart){
+int doRequest(const char *reqPath, int *bodyStart) {
     int sock, n, total, i;
 
     sock = Socket(AF_INET_NachOS, SOCK_STREAM_NachOS);
-    if(sock < 0){
+    if (sock < 0) {
         print("Error: no se pudo crear el socket\n");
         Exit(1);
     }
@@ -90,9 +89,9 @@ int doRequest(const char *reqPath, int *bodyStart){
 
     // Leer respuesta completa hasta EOF (servidor cierra conexión)
     total = 0;
-    while(total < (int)sizeof(buf) - 1){
+    while (total < (int)sizeof(buf) - 1) {
         n = Read(buf + total, (int)sizeof(buf) - 1 - total, sock);
-        if(n <= 0) break;
+        if (n <= 0) break;
         total += n;
     }
     buf[total] = '\0';
@@ -101,8 +100,9 @@ int doRequest(const char *reqPath, int *bodyStart){
 
     // Ubicar inicio del cuerpo HTTP (después de \r\n\r\n)
     *bodyStart = 0;
-    for (i = 0; i < total - 3; i++){
-        if(buf[i]   == '\r' && buf[i+1] == '\n' && buf[i+2] == '\r' && buf[i+3] == '\n'){
+    for (i = 0; i < total - 3; i++) {
+        if (buf[i]   == '\r' && buf[i+1] == '\n' &&
+            buf[i+2] == '\r' && buf[i+3] == '\n') {
             *bodyStart = i + 4;
             break;
         }
@@ -111,19 +111,133 @@ int doRequest(const char *reqPath, int *bodyStart){
     return total;
 }
 
-/
+/**
+ * doProtocolRequest:
+ * Abre socket, envia un mensaje del protocolo intragrupal y lee la respuesta.
+ *
+ * Ejemplos:
+ *   P/R/dir
+ *   P/G/carro
+ *   P/G/carro:1
+ *   P/G/carro:2
+ *
+ * Retorna total de bytes recibidos.
+ */
+int doProtocolRequest(const char *protocolMessage) {
+    int sock, n, total;
+
+    sock = Socket(AF_INET_NachOS, SOCK_STREAM_NachOS);
+
+    if (sock < 0) {
+        print("Error: no se pudo crear el socket para protocolo\n");
+        Exit(1);
+    }
+
+    Connect(sock, "127.0.0.1", 8080);
+
+    Write(protocolMessage, mystrlen(protocolMessage), sock);
+
+    total = 0;
+
+    while (total < (int)sizeof(buf) - 1) {
+        n = Read(buf + total, (int)sizeof(buf) - 1 - total, sock);
+
+        if (n <= 0) {
+            break;
+        }
+
+        total += n;
+    }
+
+    buf[total] = '\0';
+
+    Close(sock);
+
+    return total;
+}
+
+
+/** 
  * main
   */
 
-int main(){
+int main() {
     int total, bodyStart;
 
     // Obtener lista de figuras disponibles
-    print("Conectando al servidor LegoServer (127.0.0.1:8080)...\n\n");
+    print("Conectando al servidor LegoServer (127.0.0.1:8080)...\n\n"); 
+
+//Para omitir esto se pone un 0 en lugar del 1
+#if 1
+    print("=== Prueba de Protocolo Intragrupal ===\n");
+
+    total = doProtocolRequest("P/R/dir");
+
+    if (total > 0) {
+        print("\nFiguras disponibles por protocolo:\n");
+        Write(buf, total, ConsoleOutput);
+        print("\n");
+    } else {
+        print("No se recibio respuesta del servidor\n");
+        Exit(1);
+    }
+
+    print("\nDigite el nombre de la figura: ");
+    if (readline(figure, (int)sizeof(figure)) < 0) {
+        Exit(0);
+    }
+
+    if (figure[0] == '\0') {
+        print("Nombre vacio, saliendo\n");
+        Exit(0);
+    }
+
+    print("\nQue desea pedir?\n");
+    print("1. Solo parte 1\n");
+    print("2. Solo parte 2\n");
+    print("3. Figura completa\n");
+    print("Seleccione una opcion: ");
+
+    if (readline(part, (int)sizeof(part)) < 0) {
+        Exit(0);
+    }
+
+    req[0] = '\0';
+    mystrcat(req, "P/G/");
+    mystrcat(req, figure);
+
+    if (part[0] == '1') {
+        mystrcat(req, ":1");
+    } else if (part[0] == '2') {
+        mystrcat(req, ":2");
+    } else if (part[0] == '3') {
+        /*
+         * Figura completa.
+         * No se agrega :1 ni :2.
+         */
+    } else {
+        print("Opcion invalida. Use 1, 2 o 3\n");
+        Exit(1);
+    }
+
+    total = doProtocolRequest(req);
+
+    print("\n=== Respuesta del servidor ===\n");
+
+    if (total > 0) {
+        Write(buf, total, ConsoleOutput);
+        print("\n");
+    } else {
+        print("No hubo respuesta del servidor\n");
+    }
+
+    print("==============================\n\n");
+#endif
+
 
     total = doRequest("/lego/index.php", &bodyStart);
 
-    if(total <= bodyStart){
+    if (total <= bodyStart) {
         print("Error: no se recibieron figuras del servidor\n");
         Exit(1);
     }
@@ -133,20 +247,20 @@ int main(){
 
     // Pedir nombre de figura al usuario
     print("\nDigite el nombre de la figura: ");
-    if(readline(figure, (int)sizeof(figure)) < 0){
+    if (readline(figure, (int)sizeof(figure)) < 0) {
         Exit(0);
     }
-    if(figure[0] == '\0'){
+    if (figure[0] == '\0') {
         print("Nombre vacio, saliendo\n");
         Exit(0);
     }
 
     // Pedir parte (1 o 2)
     print("Seleccione la parte (1 o 2): ");
-    if(readline(part, (int)sizeof(part)) < 0){
+    if (readline(part, (int)sizeof(part)) < 0) {
         Exit(0);
     }
-    if(part[0] != '1' && part[0] != '2'){
+    if (part[0] != '1' && part[0] != '2') {
         print("Parte invalida, use 1 o 2\n");
         Exit(1);
     }
@@ -164,10 +278,9 @@ int main(){
     print("Cantidad | Descripcion\n");
     print("-----------------------\n");
 
-    if(total > bodyStart){
+    if (total > bodyStart) {
         Write(buf + bodyStart, total - bodyStart, ConsoleOutput);
-    }
-    else{
+    } else {
         print("(sin resultados)\n");
     }
 
