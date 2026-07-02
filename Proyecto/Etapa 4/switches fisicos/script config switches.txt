@@ -1,0 +1,128 @@
+CONFIGURACIÓN L2-L3 FÍSICOS
+
+-----------------------------------------------------------
+
+Configuración DHCP L2
+
+enable
+configure terminal
+
+vlan 220
+name ISLA2
+exit
+
+int range fa0/1-12
+switchport mode access
+switchport access vlan 220
+spanning-tree portfast
+exit
+
+int fa 0/24
+switchport mode trunk
+switchport trunk allowed vlan 220
+exit
+
+int vlan 220
+ip address 172.16.123.34 255.255.255.240
+no shutdown
+exit
+
+ip default-gateway 172.16.123.33
+
+ip dhcp excluded-address 172.16.123.33 172.16.123.34
+
+ip dhcp pool ISLA2
+network 172.16.123.32 255.255.255.240
+default-router 172.16.123.33
+dns-server 8.8.8.8
+exit
+
+end
+write memory
+
+-----------------------------------------------------------
+
+Configuración L3
+
+enable
+configure terminal
+
+ip routing
+
+vlan 200
+name ISLAPROFES
+exit
+
+vlan 210
+name ISLA1
+exit
+
+vlan 220
+name ISLA2
+exit
+
+vlan 230
+name ISLA3
+exit
+
+vlan 240
+name ISLA4
+exit
+
+vlan 250
+name ISLA5
+exit
+
+vlan 260
+name ISLA6
+exit
+
+int vlan 200
+ip address 172.16.123.1 255.255.255.240
+ip directed-broadcast
+no shutdown
+exit
+
+int vlan 210
+ip address 172.16.123.17 255.255.255.240
+ip directed-broadcast
+no shutdown
+exit
+
+int vlan 220
+ip address 172.16.123.33 255.255.255.240
+ip directed-broadcast
+no shutdown
+exit
+
+int vlan 230
+ip address 172.16.123.49 255.255.255.240
+ip directed-broadcast
+no shutdown
+exit
+
+int vlan 240
+ip address 172.16.123.65 255.255.255.240
+ip directed-broadcast
+no shutdown
+exit
+
+int vlan 250
+ip address 172.16.123.81 255.255.255.240
+ip directed-broadcast
+no shutdown
+exit
+
+int vlan 260
+ip address 172.16.123.97 255.255.255.240
+ip directed-broadcast
+no shutdown
+exit
+
+int range fa0/1-7
+switchport mode trunk
+switchport trunk allowed vlan 200, 210, 220, 230, 240, 250, 260
+exit
+
+end
+write memory
